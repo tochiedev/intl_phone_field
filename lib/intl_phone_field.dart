@@ -35,6 +35,7 @@ class IntlPhoneField extends StatefulWidget {
   final ValueChanged<PhoneNumber>? onChanged;
 
   final ValueChanged<Country>? onCountryChanged;
+  final ValueChanged<Country>? chooseCountry;
 
   /// For validator to work, turn [autovalidateMode] to [AutovalidateMode.onUserInteraction]
   final FutureOr<String?> Function(String?)? validator;
@@ -141,6 +142,9 @@ class IntlPhoneField extends StatefulWidget {
   /// Disable view Min/Max Length check
   final bool disableLengthCheck;
 
+  /// Disable view Min/Max Length check
+  final bool showLengthCheck;
+
   /// Won't work if [enabled] is set to `false`.
   final bool showDropdownIcon;
 
@@ -176,12 +180,11 @@ class IntlPhoneField extends StatefulWidget {
   ///
   /// Default value is `true`.
   final bool showCountryFlag;
-  
+
   /// Width of country flag.
   ///
   /// Default value is 30.0.
   final double flagWidth;
-
 
   /// Message to be displayed on autoValidate error
   ///
@@ -237,14 +240,14 @@ class IntlPhoneField extends StatefulWidget {
     this.onChanged,
     this.countries,
     this.onCountryChanged,
+    this.chooseCountry,
     this.onSaved,
     this.showDropdownIcon = true,
     this.dropdownDecoration = const BoxDecoration(),
     this.inputFormatters,
     this.enabled = true,
     this.keyboardAppearance,
-    @Deprecated('Use searchFieldInputDecoration of PickerDialogStyle instead')
-        this.searchText = 'Search country',
+    @Deprecated('Use searchFieldInputDecoration of PickerDialogStyle instead') this.searchText = 'Search country',
     this.dropdownIconPosition = IconPosition.leading,
     this.dropdownIcon = const Icon(Icons.arrow_drop_down),
     this.autofocus = false,
@@ -254,6 +257,7 @@ class IntlPhoneField extends StatefulWidget {
     this.flagWidth = 30.0,
     this.cursorColor,
     this.disableLengthCheck = false,
+    this.showLengthCheck = false,
     this.flagsButtonPadding = EdgeInsets.zero,
     this.invalidNumberMessage,
     this.cursorHeight,
@@ -279,24 +283,16 @@ class _IntlPhoneFieldState extends State<IntlPhoneField> {
   @override
   void initState() {
     super.initState();
-    _countryList = widget.countries == null
-        ? countries
-        : countries
-            .where((country) => widget.countries!.contains(country.code))
-            .toList();
+    _countryList = widget.countries == null ? countries : countries.where((country) => widget.countries!.contains(country.code)).toList();
     filteredCountries = _countryList;
     number = widget.initialValue ?? '';
     if (widget.initialCountryCode == null && number.startsWith('+')) {
       number = number.substring(1);
       // parse initial value
-      _selectedCountry = countries.firstWhere(
-          (country) => number.startsWith(country.dialCode),
-          orElse: () => _countryList.first);
+      _selectedCountry = countries.firstWhere((country) => number.startsWith(country.dialCode), orElse: () => _countryList.first);
       number = number.substring(_selectedCountry.dialCode.length);
     } else {
-      _selectedCountry = _countryList.firstWhere(
-          (item) => item.code == (widget.initialCountryCode ?? 'US'),
-          orElse: () => _countryList.first);
+      _selectedCountry = _countryList.firstWhere((item) => item.code == (widget.initialCountryCode ?? 'US'), orElse: () => _countryList.first);
     }
     if (widget.autovalidateMode == AutovalidateMode.always) {
       var x = widget.validator?.call(widget.initialValue);
@@ -310,24 +306,70 @@ class _IntlPhoneFieldState extends State<IntlPhoneField> {
 
   Future<void> _changeCountry() async {
     filteredCountries = _countryList;
-    await showDialog(
-      context: context,
-      useRootNavigator: false,
+    final topSafeAreaPadding = MediaQuery.of(context).padding.top;
+    final topPadding = topSafeAreaPadding;
+
+    // final _shadow = shadow ?? _kDefaultBoxShadow;
+    //     BoxShadow(blurRadius: 10, color: Colors.black12, spreadRadius: 5);
+    final _backgroundColor = Theme.of(context).scaffoldBackgroundColor;
+
+    await showModalBottomSheet(
+      // barrierColor: Colors.black12,
+      backgroundColor: _backgroundColor,
       builder: (context) => StatefulBuilder(
-        builder: (ctx, setState) => CountryPickerDialog(
-          style: widget.pickerDialogStyle,
-          filteredCountries: filteredCountries,
-          searchText: widget.searchText,
-          countryList: _countryList,
-          selectedCountry: _selectedCountry,
-          onCountryChanged: (Country country) {
-            _selectedCountry = country;
-            widget.onCountryChanged?.call(country);
-            setState(() {});
-          },
+        builder: (ctx, setState) => SafeArea(
+          minimum: EdgeInsets.only(top: topSafeAreaPadding + 70),
+          child: Padding(
+            padding: EdgeInsets.only(top: topPadding),
+            child: ClipRRect(
+              borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+              child: Container(
+                // decoration: BoxDecoration(color: _backgroundColor, boxShadow: [_shadow]),
+                width: double.infinity,
+                child: MediaQuery.removePadding(
+                  context: context,
+                  removeTop: true, //Remove top Safe Area
+                  child: CountryPickerDialog(
+                    style: widget.pickerDialogStyle,
+                    filteredCountries: filteredCountries,
+                    searchText: widget.searchText,
+                    countryList: _countryList,
+                    selectedCountry: _selectedCountry,
+                    onCountryChanged: (Country country) {
+                      _selectedCountry = country;
+                      widget.onCountryChanged?.call(country);
+                      setState(() {});
+                      widget.focusNode?.requestFocus();
+                    },
+                  ),
+                ),
+              ),
+            ),
+          ),
         ),
       ),
+      isScrollControlled: true,
+      context: context,
+      shape: Theme.of(context).bottomSheetTheme.shape,
     );
+    // await showDialog(
+    //   context: context,
+    //   useRootNavigator: false,
+    //   builder: (context) => StatefulBuilder(
+    //     builder: (ctx, setState) => CountryPickerDialog(
+    //       style: widget.pickerDialogStyle,
+    //       filteredCountries: filteredCountries,
+    //       searchText: widget.searchText,
+    //       countryList: _countryList,
+    //       selectedCountry: _selectedCountry,
+    //       onCountryChanged: (Country country) {
+    //         _selectedCountry = country;
+    //         widget.onCountryChanged?.call(country);
+    //         setState(() {});
+    //       },
+    //     ),
+    //   ),
+    // );
     if (this.mounted) setState(() {});
   }
 
@@ -372,9 +414,7 @@ class _IntlPhoneFieldState extends State<IntlPhoneField> {
         // validate here to take care of async validation
         var msg;
         if (widget.autovalidateMode != AutovalidateMode.disabled) {
-          msg = widget.disableLengthCheck ||
-                  value.length >= _selectedCountry.minLength &&
-                      value.length <= _selectedCountry.maxLength
+          msg = widget.disableLengthCheck || value.length >= _selectedCountry.minLength && value.length <= _selectedCountry.maxLength
               ? null
               : (widget.invalidNumberMessage ?? 'Invalid Mobile Number');
           msg ??= await widget.validator?.call(phoneNumber.completeNumber);
@@ -383,7 +423,7 @@ class _IntlPhoneFieldState extends State<IntlPhoneField> {
         widget.onChanged?.call(phoneNumber);
       },
       validator: (value) => validationMessage,
-      maxLength: widget.disableLengthCheck ? null : _selectedCountry.maxLength,
+      maxLength: !widget.showLengthCheck ? null : _selectedCountry.maxLength,
       keyboardType: widget.keyboardType,
       inputFormatters: widget.inputFormatters,
       enabled: widget.enabled,
@@ -405,9 +445,7 @@ class _IntlPhoneFieldState extends State<IntlPhoneField> {
             mainAxisSize: MainAxisSize.min,
             mainAxisAlignment: MainAxisAlignment.center,
             children: <Widget>[
-              if (widget.enabled &&
-                  widget.showDropdownIcon &&
-                  widget.dropdownIconPosition == IconPosition.leading) ...[
+              if (widget.enabled && widget.showDropdownIcon && widget.dropdownIconPosition == IconPosition.leading) ...[
                 widget.dropdownIcon,
                 SizedBox(width: 4),
               ],
@@ -425,9 +463,7 @@ class _IntlPhoneFieldState extends State<IntlPhoneField> {
                   style: widget.dropdownTextStyle,
                 ),
               ),
-              if (widget.enabled &&
-                  widget.showDropdownIcon &&
-                  widget.dropdownIconPosition == IconPosition.trailing) ...[
+              if (widget.enabled && widget.showDropdownIcon && widget.dropdownIconPosition == IconPosition.trailing) ...[
                 SizedBox(width: 4),
                 widget.dropdownIcon,
               ],
