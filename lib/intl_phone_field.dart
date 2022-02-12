@@ -176,6 +176,12 @@ class IntlPhoneField extends StatefulWidget {
   ///
   /// Default value is `true`.
   final bool showCountryFlag;
+  
+  /// Width of country flag.
+  ///
+  /// Default value is 30.0.
+  final double flagWidth;
+
 
   /// Message to be displayed on autoValidate error
   ///
@@ -245,6 +251,7 @@ class IntlPhoneField extends StatefulWidget {
     this.textInputAction,
     this.autovalidateMode = AutovalidateMode.onUserInteraction,
     this.showCountryFlag = true,
+    this.flagWidth = 30.0,
     this.cursorColor,
     this.disableLengthCheck = false,
     this.flagsButtonPadding = EdgeInsets.zero,
@@ -408,7 +415,7 @@ class _IntlPhoneFieldState extends State<IntlPhoneField> {
                 Image.asset(
                   'assets/flags/${_selectedCountry.code.toLowerCase()}.png',
                   package: 'intl_phone_field',
-                  width: 32,
+                  width: widget.flagWidth,
                 ),
                 SizedBox(width: 8),
               ],
