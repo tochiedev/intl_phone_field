@@ -220,6 +220,8 @@ class IntlPhoneField extends StatefulWidget {
   /// & pick dialog
   final PickerDialogStyle? pickerDialogStyle;
 
+  final bool isCountryPicker;
+
   IntlPhoneField({
     Key? key,
     this.initialCountryCode,
@@ -265,6 +267,7 @@ class IntlPhoneField extends StatefulWidget {
     this.cursorWidth = 2.0,
     this.showCursor = true,
     this.pickerDialogStyle,
+    this.isCountryPicker = false,
   }) : super(key: key);
 
   @override
@@ -397,20 +400,12 @@ class _IntlPhoneFieldState extends State<IntlPhoneField> {
       style: widget.style,
       onSaved: (value) {
         widget.onSaved?.call(
-          PhoneNumber(
-            countryISOCode: _selectedCountry.code,
-            countryCode: '+${_selectedCountry.dialCode}',
-            number: value!,
-          ),
+          PhoneNumber(countryISOCode: _selectedCountry.code, countryCode: '+${_selectedCountry.dialCode}', number: value!, country: _selectedCountry.name),
         );
       },
       onChanged: (value) async {
         hasChanged = true;
-        final phoneNumber = PhoneNumber(
-          countryISOCode: _selectedCountry.code,
-          countryCode: '+${_selectedCountry.dialCode}',
-          number: value,
-        );
+        final phoneNumber = PhoneNumber(countryISOCode: _selectedCountry.code, countryCode: '+${_selectedCountry.dialCode}', number: value, country: _selectedCountry.name);
         // validate here to take care of async validation
         var msg;
         if (widget.autovalidateMode != AutovalidateMode.disabled) {
